@@ -11,7 +11,26 @@ import java.util.Map;
 public class IndexerImpl implements Indexer {
     public Map<String, List<List<Integer>>> index(List<String> docs) {
         Map<String, List<List<Integer>>> indexes = new HashMap<>();
-        // add your code
+        int docNum = 0;
+        for (String doc: docs) {
+            String[] words = doc.split("\\s+"); //splits each document (a String) by white spaces
+            int wordIndex = 0;
+            for (String word: words) {
+                if (!indexes.containsKey(word)) {
+                    List<List<Integer>> value = new ArrayList<>();
+                    List<Integer> atIndex = new ArrayList<>();
+                    value.add(docNum, atIndex);
+                    indexes.put(word, value);
+                }
+                List<List<Integer>> listOfDocs = indexes.get(word);
+                List<Integer> listOfInd = listOfDocs.get(docNum);
+                listOfInd.add(wordIndex);
+                listOfDocs.add(docNum, listOfInd);
+                indexes.put(word, listOfDocs);
+                wordIndex++;
+            }
+            docNum++;
+        }
         return indexes;
     }
 }
