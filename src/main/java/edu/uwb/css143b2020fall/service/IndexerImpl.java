@@ -16,6 +16,9 @@ public class IndexerImpl implements Indexer {
             String[] words = doc.split("\\s+"); //splits each document (a String) by white spaces
             int wordIndex = 0;
             for (String word: words) {
+                if (word.equals("")) {
+                    continue; //so it does not get added to the list
+                }
                 if (!indexes.containsKey(word)) {
                     List<List<Integer>> value = new ArrayList<>();
                     for (int i = 0; i < docs.size(); i++) {
