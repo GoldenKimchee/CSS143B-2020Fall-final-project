@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class IndexerImpl implements Indexer { //doc num 2 index 2
+public class IndexerImpl implements Indexer {
     public Map<String, List<List<Integer>>> index(List<String> docs) {
         Map<String, List<List<Integer>>> indexes = new HashMap<>();
         int docNum = 0;
@@ -18,26 +18,18 @@ public class IndexerImpl implements Indexer { //doc num 2 index 2
             for (String word: words) {
                 if (!indexes.containsKey(word)) {
                     List<List<Integer>> value = new ArrayList<>();
-                    for (int i = 0; i <= docNum; i++) {
+                    for (int i = 0; i < docs.size(); i++) {
                         List<Integer> atIndex = new ArrayList<>();
                         value.add(atIndex);
                     }
                     indexes.put(word, value);
                 }
                 List<List<Integer>> listOfDocs = indexes.get(word);
-                if (listOfDocs.size() <= docNum) { //add another array for the next doc, otherwise out of bounds error
-                    for (int j = listOfDocs.size(); j <= docNum; j++) {
-                        List<Integer> atIndex = new ArrayList<>();
-                        listOfDocs.add(atIndex);
-                    }
-                    List<Integer> add = new ArrayList<>();
-                    listOfDocs.add(docNum, add);
-                }
-                List<Integer> listOfInd = listOfDocs.get(docNum); //index 1 out of bounds for length 1
+                List<Integer> listOfInd = listOfDocs.get(docNum);
                 listOfInd.add(wordIndex);
-                listOfDocs.remove(docNum); //maybe remove. address is shared
+                listOfDocs.remove(docNum);
                 listOfDocs.add(docNum, listOfInd);
-                indexes.replace(word, listOfDocs); //this is a problem,
+                indexes.replace(word, listOfDocs);
                 wordIndex++;
             }
             docNum++;
