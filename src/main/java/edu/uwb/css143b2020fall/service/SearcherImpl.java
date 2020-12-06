@@ -57,21 +57,27 @@ public class SearcherImpl implements Searcher {
         }
 
         //determine whether search words are in the correct order right next to each other
+        for (int i = 0; i < allWords.get(0).size(); i++) { //get the length of the first word's list, since it should
+                                                           //equal the amount of docs
+            List<List<Integer>> compareDocs = new ArrayList<>();
+            //to arrange a list of lists that has the words from each doc with the indexes they appear in
+            for (int j = 0; j < allWords.size(); j++) {
+                List<List<Integer>> docAppeared = allWords.get(j); // get word's list of docs appeared in
+                List<Integer> indexesAppeared = docAppeared.get(i); // get the indexes appeared in doc
+                compareDocs.add(indexesAppeared);
+            }
 
+            //subtracts from the indexes of each word so we can now compare and see if the words are next to each other
+            for (int k = 0; k < compareDocs.size(); k++) {
+                for (int l = 0; l < compareDocs.get(k).size(); l++) {
+                    int indexToEdit = compareDocs.get(k).get(l);
+                    compareDocs.get(k).remove(l);
+                    int newIndex = indexToEdit - k;
+                    compareDocs.get(k).add(newIndex);
+                }
+            }
+        }
 
-        //step 1: get the documents that contain all the words in the given phrase
-        //[0,1,3,4,5], [0,2,3,4,5]
-        //get the common number (document id) of both lists --> [0, 3, 4, 5]
-
-        //step 2: for each common doc, get location index of each word in the search phrase
-        //"is here already"
-        //document 2: {1}, {2}, {3}  which is indexes gathered from looking at each word and the index
-        //the word is at in doc 2
-
-        //determine whether search words are in the correct order right next to each other
-        //if yes doc 2 is one of the answers
-
-        //do the location math (check onenote) nd return the document that have common index after the calculation
         return result;
     }
 }
