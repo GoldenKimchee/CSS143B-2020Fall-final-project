@@ -16,14 +16,21 @@ public class SearcherImpl implements Searcher {
         List<Integer> result = new ArrayList<>();
 
         //Step 0
+        //Break the keyPhrase into parts
         //( e.g. words = ["hello", "world"] )
         keyPhrase = keyPhrase.trim();
         String[] words = keyPhrase.split("\\s+"); //split keyPhrase into words by space
+        if (words[0].equals("")) { //if there was nothing searched up
+            return result;
+        }
 
         //Step 1
+        //gets the docs that contain all the words in the given phrase
         //( e.g. allDocs = [ [1, 2], [0, 1, 2] ]
-        List<List<Integer>> allDocs = containingDocs(words, index); //gets the docs that contain all the words in the
-        // given phrase
+        List<List<Integer>> allDocs = containingDocs(words, index);
+        if (allDocs == null) {
+            return result;
+        }
 
         //( e.g. [1, 2] )
         //get the common number (document id) of both lists
@@ -66,6 +73,9 @@ public class SearcherImpl implements Searcher {
 
         //assembles all the docs that each word appears in
         for (String word: wordList) { //do this for each word
+            if (!mappedWords.containsKey(word)) { //in the case that there is a word in the keyPhrase that
+                return null;                      //is not in our system
+            }
             List<List<Integer>> listOfDocs = mappedWords.get(word); //get the docs that the word does/does not appear in
             List<Integer> commonDocs = new ArrayList<>(); //new list to store the doc numbers that the word appears in
             for (int i = 0; i < listOfDocs.size(); i++) { //look at each doc
