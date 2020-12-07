@@ -3,46 +3,29 @@ package edu.uwb.css143b2020fall.service;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class SearcherImpl implements Searcher {
     public List<Integer> search(String keyPhrase, Map<String, List<List<Integer>>> index) {
-        List<Integer> result = new ArrayList<>(); // [0, 2] appears in docs 0, 2
+        //for my own notes..( e.g. keyPhrase = "hello world"
+        //                         index = "hello" -> [ [], [1], [0,2] ]
+        //                                 "world" -> [ [], [0], [1] ]   )
 
+        //( e.g. should return doc 2)
+        List<Integer> result = new ArrayList<>();
+
+        //Step 0
+        //( e.g. words = ["hello", "world"] )
         String[] words = keyPhrase.split("\\s+"); //split keyPhrase into words by space
 
-        List<List<Integer>> allDocs = new ArrayList<>(); //holds where each word appears in what doc
-        //e.g. "hello world" turns to this: [[0,1,3,4,5], [0,2,3,4,5]]
-
-        //assembles all the docs that each word appears in
-        for (String word: words) {
-            List<List<Integer>> listOfDocs = index.get(word);
-            List<Integer> commonDocs = new ArrayList<>();
-            for (int i = 0; i < listOfDocs.size(); i++) { //look at each doc
-                List<Integer> listOfInd = listOfDocs.get(i);
-                if (!listOfInd.isEmpty()) { //if present at a doc,
-                    commonDocs.add(i);      //it adds that doc number for that word
-                }
-            }
-            allDocs.add(commonDocs); //add the list of docs that the word appears in for every word
-        }
+        //Step 1
+        //( e.g. allDocs = [ [1, 2], [1, 2] ]
+        List<List<Integer>> allDocs = containingDocs(words, index); //gets the docs that contain all the words in the
+        // given phrase
 
         //get the common number (document id) of both lists
-        List<Integer> inCommon = new ArrayList<>(); //list contains all the docs that the words have in common
-        List<Integer> toCompare = allDocs.get(0); //compare this list to the rest
-        for (int j = 1; j < allDocs.size(); j++) {
-            List<Integer> toCheck = allDocs.get(j);
-            for (int i = 0; i < toCompare.size(); i++) {
-                for (int k = 0; k < toCheck.size(); k++) {
-                    if (toCompare.get(i) == toCheck.get(k)) {
-                        inCommon.add(toCompare.get(i));
-                    }
-                }
-            }
-        }
+        Set<Integer> commonDocs = commonDocs(allDocs); //list contains all the docs that the words have in common
 
         //for each common doc, get location index of each word in the search phrase
         List<List<List<Integer>>> allWords= new ArrayList<>(); //stores the indexes that the words appear in
@@ -76,8 +59,43 @@ public class SearcherImpl implements Searcher {
                     compareDocs.get(k).add(newIndex);
                 }
             }
-        }
-
+       }
         return result;
     }
+
+    //e.g. "hello world" turns to this: [[0,1,3,4,5], [0,2,3,4,5]]
+    //holds where each word appears in what doc
+    //for each of the words in wordList, we will check in the mappedWords map for each word, and see what docs they
+    //appeared in, and put those doc numbers into the list of lists in order.
+    //Each List<Integer> that is in the List<List<Integer>> in allDocs will be for each word (in order) and will hold
+    //the number of the docs that the word appears in
+    public List<List<Integer>> containingDocs(String[] wordList, Map<String, List<List<Integer>>> mappedWords) {
+        List<List<Integer>> allDocs = new ArrayList<>(); //we will store our results in here
+
+        //assembles all the docs that each word appears in
+        for (String word: wordList) { //do this for each word
+            List<List<Integer>> listOfDocs = mappedWords.get(word); //get the docs that the word does/does not appear in
+            List<Integer> commonDocs = new ArrayList<>(); //new list to store the doc numbers that the word appears in
+            for (int i = 0; i < listOfDocs.size(); i++) { //look at each doc
+                List<Integer> listOfInd = listOfDocs.get(i);
+                if (!listOfInd.isEmpty()) { //if present at the doc,
+                    commonDocs.add(i);      //it adds that doc number for that word
+                }
+            }
+            allDocs.add(commonDocs); //add the list of docs that the word appears in for every word
+        }
+        return allDocs;
+    }
+
+    public Set<Integer> commonDocs(List<List<Integer>> allDocs) {
+        Set<Integer> docsInCommon = new HashSet<>(); //so that I can add to here without worrying about duplicates
+
+        for (List<Integer> list: allDocs) { //"list" is the list of docs that each word appears in
+            for (Integer doc: list) { //"doc" is the document id that each word appears in
+                docsInCommon.add(doc);
+            }
+        }
+        return docsInCommon;
+    }
+
 }
