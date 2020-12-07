@@ -12,7 +12,7 @@ public class SearcherImpl implements Searcher {
         //                         index = "hello" -> [ [], [1], [0,2] ]
         //                                 "world" -> [ [1], [0], [1] ]   )
 
-        //( e.g. should return doc 2)
+        //( e.g. we will store the target result of [2] for doc 2)
         List<Integer> result = new ArrayList<>();
 
         //Step 0
@@ -27,36 +27,33 @@ public class SearcherImpl implements Searcher {
 
         //( e.g. [1, 2] )
         //get the common number (document id) of both lists
-        Set<Integer> inCommonDocs = commonDocs(allDocs); //list contains all the docs that the words have in common
+        Set<Integer> preInCommonDocs = commonDocs(allDocs); //list contains all the docs that the words have in common
+        Integer[] inCommonDocs = new Integer[preInCommonDocs.size()];
+        preInCommonDocs.toArray(inCommonDocs);
 
         //Step 2
+        //( e.g. [ [ [1], [0, 2] ], [ [0], [1] ] ]  for "hello" and "world" respectively
         //for each common doc, get location index of each word in the search phrase
         List<List<List<Integer>>> allWords = organizeIntoInd(words, index, inCommonDocs); //stores the indexes that the
                                                                                           // words appear in
 
-        //determine whether search words are in the correct order right next to each other
-        for (int i = 0; i < allWords.get(0).size(); i++) { //get the length of the first word's list, since it should
-                                                           //equal the amount of docs
-            List<List<Integer>> compareDocs = new ArrayList<>();
-            //to arrange a list of lists that has the words from each doc with the indexes they appear in
-            for (int j = 0; j < allWords.size(); j++) {
-                List<List<Integer>> docAppeared = allWords.get(j); // get word's list of docs appeared in
-                List<Integer> indexesAppeared = docAppeared.get(i); // get the indexes appeared in doc
-                compareDocs.add(indexesAppeared);
+        //Step 3
+        //Uses "findIndexesForDoc" function to compile the words from each doc and put their indexes for that particular
+        //doc into a List<List<Integer>>
+        //Using the result of previously mentioned function, pass into "foundInDoc" function that is performed for
+        // every common document, that function performs some location maths. if returns true, it will check which
+        // document that is corresponds to and add that to "result"
+        //( e.g. will return "result" of [2] )
+        for (int numOfDoc = 0; numOfDoc < inCommonDocs.length; numOfDoc++) {
+            List<List<Integer>> indexesForDoc = findIndexesForDoc(numOfDoc, allWords);
+            calculateInd(indexesForDoc);
+            if (findResult(indexesForDoc)) {
+                result.add(inCommonDocs[numOfDoc]);
             }
-
-            //subtracts from the indexes of each word so we can now compare and see if the words are next to each other
-            for (int k = 0; k < compareDocs.size(); k++) {
-                for (int l = 0; l < compareDocs.get(k).size(); l++) {
-                    int indexToEdit = compareDocs.get(k).get(l);
-                    compareDocs.get(k).remove(l);
-                    int newIndex = indexToEdit - k;
-                    compareDocs.get(k).add(newIndex);
-                }
-            }
-       }
+        }
         return result;
     }
+
 
     //e.g. "hello world" turns to this: [[0,1,3,4,5], [0,2,3,4,5]]
     //holds where each word appears in what doc
@@ -64,7 +61,7 @@ public class SearcherImpl implements Searcher {
     //appeared in, and put those doc numbers into the list of lists in order.
     //Each List<Integer> that is in the List<List<Integer>> in allDocs will be for each word (in order) and will hold
     //the number of the docs that the word appears in
-    public List<List<Integer>> containingDocs(String[] wordList, Map<String, List<List<Integer>>> mappedWords) {
+    private List<List<Integer>> containingDocs(String[] wordList, Map<String, List<List<Integer>>> mappedWords) {
         List<List<Integer>> allDocs = new ArrayList<>(); //we will store our results in here
 
         //assembles all the docs that each word appears in
@@ -82,7 +79,7 @@ public class SearcherImpl implements Searcher {
         return allDocs;
     }
 
-    public Set<Integer> commonDocs(List<List<Integer>> allDocs) {
+    private Set<Integer> commonDocs(List<List<Integer>> allDocs) {
         Set<Integer> docsInCommon = new HashSet<>(); //so that I can add to here without worrying about duplicates
 
         for (List<Integer> list: allDocs) { //"list" is the list of docs that each word appears in
@@ -93,8 +90,8 @@ public class SearcherImpl implements Searcher {
         return docsInCommon;
     }
 
-    public List<List<List<Integer>>> organizeIntoInd (String[] words, Map<String, List<List<Integer>>> mappedWords,
-                                                      Set<Integer> inCommon) {
+    private List<List<List<Integer>>> organizeIntoInd (String[] words, Map<String, List<List<Integer>>> mappedWords,
+                                                      Integer[] inCommon) {
         List<List<List<Integer>>> allWords = new ArrayList<>(); //to return
 
         for (String word: words) {
@@ -113,6 +110,60 @@ public class SearcherImpl implements Searcher {
         //List<Integer> is for each doc
         //Integer is the index the word appears at
         return allWords;
+    }
+
+    //determine whether search words are in the correct order right next to each other
+    private List<List<Integer>> findIndexesForDoc(int numOfDoc, List<List<List<Integer>>> allWords) {
+        List<List<Integer>> compiledIndexes = new ArrayList<>();
+
+        for (int keyPhraseLength = 0; keyPhraseLength < allWords.size(); keyPhraseLength++) {
+            List<List<Integer>> wordDocs = allWords.get(keyPhraseLength);
+            List<Integer> indexesToCheck = wordDocs.get(numOfDoc);
+            compiledIndexes.add(indexesToCheck);
+        }
+
+        return compiledIndexes;
+    }
+
+    //Retrieve results by doing some location math to see if the indexes for the words are in order like
+    //the keyphrase
+    private void calculateInd(List<List<Integer>> indexesForDoc) {
+        for (int eachWord = 0; eachWord < indexesForDoc.size(); eachWord++) {
+            List<Integer> forWord = indexesForDoc.get(eachWord);
+            List<Integer> calculatedInd = new ArrayList<>();
+            for (int eachIndex = 0; eachIndex < forWord.size(); eachIndex++) {
+                Integer index = forWord.get(eachIndex);
+                Integer newInd = index - eachWord;
+                calculatedInd.add(newInd);
+            }
+            indexesForDoc.remove(eachWord);
+            indexesForDoc.add(eachWord, calculatedInd);
+        }
+    }
+
+    //Checks the list of indexes if the words are next to each other (in same order as keyphrase)
+    private boolean findResult(List<List<Integer>> indexesForDoc) {
+        //if the value for the key is equal to the length of indexesForDoc then that means that same number appeared
+        //for all of the words, means that doc is the answer
+        Map<Integer, Integer> checkOrder= new TreeMap<>();
+        for (int eachWord = 0; eachWord < indexesForDoc.size(); eachWord++) {
+            List<Integer> aWord = indexesForDoc.get(eachWord);
+            for (Integer index: aWord) {
+                if (checkOrder.containsKey(index)) {
+                    Integer indKey = checkOrder.get(index);
+                    indKey++;
+                    checkOrder.put(index, indKey);
+                } else {
+                    //if the key hasn't been put in the map yet
+                    checkOrder.put(index, 1);
+                }
+            }
+        }
+        Integer max = checkOrder.values().stream().max(Integer::compare).get();
+        if (max == indexesForDoc.size()) {
+            return true;
+        }
+        return false;
     }
 
 }
