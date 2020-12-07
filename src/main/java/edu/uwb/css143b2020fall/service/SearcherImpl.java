@@ -10,34 +10,29 @@ public class SearcherImpl implements Searcher {
     public List<Integer> search(String keyPhrase, Map<String, List<List<Integer>>> index) {
         //for my own notes..( e.g. keyPhrase = "hello world"
         //                         index = "hello" -> [ [], [1], [0,2] ]
-        //                                 "world" -> [ [], [0], [1] ]   )
+        //                                 "world" -> [ [1], [0], [1] ]   )
 
         //( e.g. should return doc 2)
         List<Integer> result = new ArrayList<>();
 
         //Step 0
         //( e.g. words = ["hello", "world"] )
+        keyPhrase = keyPhrase.trim();
         String[] words = keyPhrase.split("\\s+"); //split keyPhrase into words by space
 
         //Step 1
-        //( e.g. allDocs = [ [1, 2], [1, 2] ]
+        //( e.g. allDocs = [ [1, 2], [0, 1, 2] ]
         List<List<Integer>> allDocs = containingDocs(words, index); //gets the docs that contain all the words in the
         // given phrase
 
+        //( e.g. [1, 2] )
         //get the common number (document id) of both lists
-        Set<Integer> commonDocs = commonDocs(allDocs); //list contains all the docs that the words have in common
+        Set<Integer> inCommonDocs = commonDocs(allDocs); //list contains all the docs that the words have in common
 
+        //Step 2
         //for each common doc, get location index of each word in the search phrase
-        List<List<List<Integer>>> allWords= new ArrayList<>(); //stores the indexes that the words appear in
-        for (String word: words) {
-            List<List<Integer>> docAndInd = new ArrayList<>(); //store indexes of each word
-            List<List<Integer>> retrieveInd = index.get(word);
-            for (Integer docNumber: inCommon) {
-                List<Integer> indexAppeared = retrieveInd.get(docNumber);
-                docAndInd.add(indexAppeared);
-            }
-            allWords.add(docAndInd);
-        }
+        List<List<List<Integer>>> allWords = organizeIntoInd(words, index, inCommonDocs); //stores the indexes that the
+                                                                                          // words appear in
 
         //determine whether search words are in the correct order right next to each other
         for (int i = 0; i < allWords.get(0).size(); i++) { //get the length of the first word's list, since it should
@@ -96,6 +91,28 @@ public class SearcherImpl implements Searcher {
             }
         }
         return docsInCommon;
+    }
+
+    public List<List<List<Integer>>> organizeIntoInd (String[] words, Map<String, List<List<Integer>>> mappedWords,
+                                                      Set<Integer> inCommon) {
+        List<List<List<Integer>>> allWords = new ArrayList<>(); //to return
+
+        for (String word: words) {
+            List<List<Integer>> docAndInd = new ArrayList<>(); //store indexes of each word
+            List<List<Integer>> retrieveInd = mappedWords.get(word); //get the list where it has all the docs with ind
+            for (Integer docNumber: inCommon) {
+                List<Integer> indexAppeared = retrieveInd.get(docNumber); //get the indexes from the docs that all
+                                                                          //words appear in
+                docAndInd.add(indexAppeared);                             //for this doc's indexes, add to the list
+            }
+            allWords.add(docAndInd); //add to the overall list
+        }
+
+        //this list has a List<List<List<Integer>>> which holds all the results together,
+        //the List<List<Integer>> represents each word
+        //List<Integer> is for each doc
+        //Integer is the index the word appears at
+        return allWords;
     }
 
 }
